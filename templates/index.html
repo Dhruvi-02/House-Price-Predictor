@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>House Price Predictor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0b0f1a;
+      --surface: #121829;
+      --border: #1e2a40;
+      --accent: #4f9ef8;
+      --accent2: #f85f4f;
+      --text: #e8edf5;
+      --muted: #6b7fa3;
+      --glow: rgba(79,158,248,0.18);
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 24px 80px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* animated grid background */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(79,158,248,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(79,158,248,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* floating blobs */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+      animation: drift 8s ease-in-out infinite alternate;
+    }
+    .blob-1 { width: 400px; height: 400px; background: rgba(79,158,248,0.1); top: -100px; right: -100px; }
+    .blob-2 { width: 300px; height: 300px; background: rgba(248,95,79,0.08); bottom: -80px; left: -60px; animation-delay: 3s; }
+
+    @keyframes drift {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(20px, 30px) scale(1.05); }
+    }
+
+    /* content wrapper */
+    .wrap { position: relative; z-index: 1; width: 100%; max-width: 680px; }
+
+    /* header */
+    header {
+      padding: 70px 0 48px;
+      text-align: center;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(79,158,248,0.12);
+      border: 1px solid rgba(79,158,248,0.3);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 6px 16px;
+      border-radius: 100px;
+      margin-bottom: 24px;
+    }
+    header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(38px, 7vw, 72px);
+      font-weight: 800;
+      line-height: 1.0;
+      letter-spacing: -0.03em;
+    }
+    header h1 em {
+      font-style: normal;
+      background: linear-gradient(120deg, var(--accent), #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    header p {
+      margin-top: 18px;
+      font-size: 15px;
+      font-weight: 300;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 420px;
+      margin-inline: auto;
+    }
+
+    /* input card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(79,158,248,0.4), transparent);
+    }
+    .card-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    .size-display {
+      font-family: 'Syne', sans-serif;
+      font-size: 56px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .size-display span {
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--muted);
+      margin-left: 6px;
+    }
+
+    .slider-wrap { margin-top: 24px; }
+    input[type=range] {
+      width: 100%;
+      -webkit-appearance: none;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+      position: relative;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px; height: 22px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 0 4px rgba(79,158,248,0.2), 0 0 16px rgba(79,158,248,0.4);
+      cursor: pointer;
+      transition: box-shadow 0.2s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      box-shadow: 0 0 0 6px rgba(79,158,248,0.25), 0 0 24px rgba(79,158,248,0.5);
+    }
+    
+    .input-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;      
+    width: 100%;
+    margin-top: 30px;
+    }
+
+    #slider {
+      flex-grow: 1;
+      cursor: pointer;
+    }
+
+    .input-append {
+      display: flex;
+      align-items: center;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.03);
+      padding: 8px 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    #size-input {
+    width: 55px;    /* Keeps the box small so it doesn't break the UI */
+    background: transparent;
+    border: none;
+    color: white;
+    font-family: inherit;
+    font-size: 1rem;
+    /* border-radius: 1px solid white; */
+    text-align: center;
+    outline: none;
+    }
+
+    .unit-tag {
+      font-size: 0.8rem;
+      color: #888;
+      margin-left: 5px;
+    }
+
+    .range-ticks {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--muted);
+      font-family: 'Outfit', monospace;
+    }
+
+    /* button grid */
+    .btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .btn {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 32px 20px;
+      border-radius: 16px;
+      border: 1px solid;
+      cursor: pointer;
+      font-family: 'Outfit', sans-serif;
+      transition: transform 0.2s cubic-bezier(.34,1.56,.64,1), box-shadow 0.2s;
+      overflow: hidden;
+      text-decoration: none;
+    }
+    .btn::before {
+      content: '';
+      position: absolute; inset: 0;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { transform: translateY(-4px); }
+    .btn:hover::before { opacity: 1; }
+    .btn:active { transform: translateY(-1px); }
+
+    .btn-chart {
+      background: rgba(79,158,248,0.08);
+      border-color: rgba(79,158,248,0.3);
+      box-shadow: 0 0 0 0 rgba(79,158,248,0);
+    }
+    .btn-chart::before {
+      background: radial-gradient(circle at 50% 0%, rgba(79,158,248,0.12), transparent 70%);
+    }
+    .btn-chart:hover {
+      box-shadow: 0 8px 32px rgba(79,158,248,0.2), 0 0 0 1px rgba(79,158,248,0.4);
+    }
+
+    .btn-predict {
+      background: rgba(248,95,79,0.08);
+      border-color: rgba(248,95,79,0.3);
+    }
+    .btn-predict::before {
+      background: radial-gradient(circle at 50% 0%, rgba(248,95,79,0.12), transparent 70%);
+    }
+    .btn-predict:hover {
+      box-shadow: 0 8px 32px rgba(248,95,79,0.2), 0 0 0 1px rgba(248,95,79,0.4);
+    }
+
+    .btn-icon {
+      font-size: 36px;
+      filter: drop-shadow(0 0 8px currentColor);
+      display: block;
+    }
+    .btn-title {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      position: relative; z-index: 1;
+    }
+    .btn-chart .btn-title { color: var(--accent); }
+    .btn-predict .btn-title { color: var(--accent2); }
+    .btn-hint {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 300;
+      position: relative; z-index: 1;
+    }
+
+    /* opens new tab label */
+    .new-tab-badge {
+      position: absolute;
+      top: 12px; right: 12px;
+      background: rgba(79,158,248,0.15);
+      border: 1px solid rgba(79,158,248,0.25);
+      border-radius: 100px;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      padding: 3px 8px;
+    }
+
+    /* prediction result */
+    #result-box {
+      display: none;
+      background: var(--surface);
+      border: 1px solid rgba(248,95,79,0.3);
+      border-radius: 16px;
+      padding: 36px;
+      position: relative;
+      overflow: hidden;
+      animation: popIn 0.4s cubic-bezier(.34,1.56,.64,1);
+    }
+    #result-box::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(248,95,79,0.5), transparent);
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.95) translateY(12px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .result-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .result-label::before {
+      content: '';
+      display: inline-block;
+      width: 6px; height: 6px;
+      background: var(--accent2);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent2);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.7); }
+    }
+
+    .price-big {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(44px, 10vw, 80px);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, var(--accent2), #f8a14f);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 14px;
+    }
+
+    .result-breakdown {
+      display: grid;
+      justify-content: space-between;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 16px;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .stat-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .stat-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .formula-strip {
+      margin-top: 20px;
+      padding: 14px 18px;
+      background: rgba(79,158,248,0.06);
+      border: 1px solid rgba(79,158,248,0.15);
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: 'Courier New', monospace;
+      line-height: 1.8;
+      display: inline-block;
+      min-width: 300px;
+    }
+    .formula-strip strong { color: var(--accent); }
+
+    @media (max-width: 500px) {
+      .btn-grid { grid-template-columns: 1fr; }
+      .result-breakdown { grid-template-columns: 1fr 1fr; }
+      .card { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <div class="wrap">
+    <header>
+      <div class="badge">⚡ ML · Linear Regression</div>
+      <h1>House <em>Price</em><br>Predictor</h1>
+      <p>Adjust the size of your house and estimate its market value instantly.</p>
+    </header>
+
+   <!-- Size input card  -->
+    <div class="card">
+      <div class="card-label">House Size</div>
+      <div class="size-display" id="size-label">1,500<span>sq ft</span></div>
+      <div class="input-group">
+        <input type="range" id="slider" min="500" max="2500" step="10">
+        <div class="input-append">
+          <input type="number" id="size-input" min="500" max="2500">
+          <span class="unit-tag">sq ft</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Two buttons -->
+    <div class="btn-grid">
+      <!-- Opens chart.html in a new tab -->
+      <a class="btn btn-chart" id="chart-btn" href="chart.html" target="_blank">
+        <span class="btn-icon">📈</span>
+        <span class="btn-title">View Chart</span>
+        <span class="btn-hint">Linear Regression graph</span>
+      </a>
+
+      <!-- Shows prediction -->
+      <button class="btn btn-predict" onclick="showPrediction()">
+        <span class="btn-icon">💰</span>
+        <span class="btn-title">Predict Price</span>
+        <span class="btn-hint">Instant estimate below</span>
+      </button>
+    </div>
+
+    <!-- Prediction result (hidden until button is clicked) -->
+    <div id="result-box">
+      <div class="result-label">Predicted Market Value</div>
+      <div class="price-big" id="price-out">—</div>
+      <div id="result-desc" style="font-size:14px;color:var(--muted);font-weight:300;line-height:1.7;"></div>
+      <div class="result-breakdown">
+        <div class="stat">
+          <span class="stat-label">Size</span>
+          <span class="stat-value" id="stat-size">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Slope</span>
+          <span class="stat-value" id="stat-slope">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Intercept</span>
+          <span class="stat-value" id="stat-intercept">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">R² Score</span>
+          <span class="stat-value" id="stat-r2">—</span>
+        </div>
+      </div>
+      <div class="formula-strip" id="formula-out"></div>
+    </div>
+  </div>
+
+  <script>
+    
+    // Defining elements
+    const slider = document.getElementById('slider');
+    const sizeInput = document.getElementById('size-input'); 
+    const sizeLabel = document.getElementById('size-label');
+
+    // Adding the logic
+    slider.oninput = function() {
+      sizeInput.value = this.value;
+      sizeLabel.innerHTML = this.value + '<span>sq ft</span>';
+    }
+
+    sizeInput.onchange = function() {
+      if(this.value>=500 && this.value<=2500) {
+        slider.value = this.value;
+        sizeLabel.innerHTML = parseInt(this.value).toLocaleString() + '<span>sq ft</span>';
+        document.getElementById('chart-btn').href = `chart.html?size=${this.value}`;
+      }
+    }
+  
+    // Update label as sliding
+    slider.addEventListener('input', () => {
+    const s = slider.value;
+    sizeLabel.innerHTML = parseInt(s).toLocaleString() + '<span>sq ft</span>';
+    document.getElementById('chart-btn').href = `chart.html?size=${s}`;
+    });
+
+    async function showPrediction() {
+    const sizeValue = slider.value;
+  
+    // Backend
+    const response = await fetch('/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ size: sizeValue })
+    });
+
+    const data = await response.json();
+    document.getElementById('stat-slope').textContent = data.slope + 'K';
+    document.getElementById('stat-intercept').textContent = data.intercept + 'K';
+    document.getElementById('stat-r2').textContent = data.r2_score;
+
+    // Result
+    document.getElementById('price-out').textContent = `$${data.price}K`;
+    document.getElementById('stat-size').textContent = parseInt(sizeValue).toLocaleString() + ' ft²';
+  
+    document.getElementById('result-desc').innerHTML =
+      `A <strong style="color:var(--text)">${parseInt(sizeValue).toLocaleString()} sq ft</strong> home is estimated to be of
+      <strong style="color:var(--accent2)">$${(data.price * 1000).toLocaleString()}</strong>.`;
+  
+    document.getElementById('formula-out').innerHTML =
+      `Price = (slope × size) + intercept<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = (${data.slope}K × ${sizeValue}) + ${data.intercept}K<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = <strong>$${data.price}K</strong>`;
+
+    const box = document.getElementById('result-box');
+    box.style.display = 'block';
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    
+  </script>
+</body>
+</html>

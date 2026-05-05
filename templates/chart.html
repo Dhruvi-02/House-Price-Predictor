@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Regression Chart · House Price</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0b0f1a;
+      --surface: #121829;
+      --border: #1e2a40;
+      --accent: #4f9ef8;
+      --accent2: #f85f4f;
+      --green: #4fdb9a;
+      --text: #e8edf5;
+      --muted: #6b7fa3;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      padding: 0 24px 80px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(79,158,248,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(79,158,248,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+    }
+
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(90px);
+      pointer-events: none;
+    }
+    .blob-1 { width: 500px; height: 500px; background: rgba(79,158,248,0.07); top: -150px; left: -100px; }
+    .blob-2 { width: 350px; height: 350px; background: rgba(79,248,154,0.06); bottom: 0; right: -100px; }
+
+    .wrap {
+      position: relative; z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    /* ── nav ── */
+    nav {
+      padding: 28px 0;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(79,158,248,0.1);
+      border: 1px solid rgba(79,158,248,0.25);
+      color: var(--accent);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 18px;
+      border-radius: 100px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .back-btn:hover { background: rgba(79,158,248,0.18); transform: translateX(-2px); }
+    .nav-title {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .nav-title strong { color: var(--text); }
+
+    .page-header {
+      padding-bottom: 40px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(79,248,154,0.1);
+      border: 1px solid rgba(79,248,154,0.25);
+      color: var(--green);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border-radius: 100px;
+      margin-bottom: 18px;
+    }
+    .page-header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(28px, 5vw, 52px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+    .page-header h1 em {
+      font-style: normal;
+      color: var(--accent);
+    }
+    .page-header p {
+      margin-top: 14px;
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 300;
+      max-width: 500px;
+      line-height: 1.7;
+    }
+
+    .symbol-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    .point {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+    .point-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .point-line {
+      width: 20px; height: 3px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* chart */
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .chart-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0.4;
+    }
+
+    /* user input highlight */
+    .your-input-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: rgba(248,95,79,0.08);
+      border: 1px solid rgba(248,95,79,0.25);
+      border-radius: 12px;
+      padding: 18px 24px;
+      margin-bottom: 24px;
+    }
+    .yib-left { font-size: 13px; color: var(--muted); }
+    .yib-left strong { color: var(--text); }
+    .yib-price {
+      font-family: 'Syne', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--accent2);
+    }
+
+    /* stats row */
+    .stats-row {
+      display: flex;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 76px;
+      margin-bottom: 24px;
+      justify-content: center;
+      align-items: center;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0; height: 2px;
+      background: var(--accent);
+      transform: scaleX(0);
+      transition: transform 0.4s ease;
+    }
+    .stat-card.loaded::after { transform: scaleX(1); }
+    .stat-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .stat-val {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .stat-val.green { color: var(--green); }
+
+    /* data table */
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    .table-header {
+      padding: 24px 32px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .table-header h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    thead th {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 14px 24px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody td {
+      padding: 14px 24px;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(30,42,64,0.6);
+      font-family: 'Courier New', monospace;
+      color: var(--text);
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: rgba(79,158,248,0.04); }
+    tbody tr.highlight td { background: rgba(248,95,79,0.07); }
+
+    .diff-good {
+    color: #4fdb9a; /* green */
+    }
+    .diff-mid {
+    color: #f8a14f; /* yellow */
+    }
+    .diff-bad {
+    color: #f85f4f; /* red */
+    }
+
+    @media (max-width: 600px) {
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .chart-card { padding: 20px; }
+      thead th, tbody td { padding: 12px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <div class="wrap">
+
+    <!-- Nav -->
+    <nav>
+      <a class="back-btn" href="\" onclick="history.back()">← Back</a>
+      <span class="nav-title">House Price Predictor | <strong>Regression Chart</strong></span>
+    </nav>
+
+    <!-- Page header -->
+    <div class="page-header">
+      <h1>Linear <em>Regression</em><br>Analysis</h1>
+      <p>Each dot represents a real house from the training data. The blue line is what the model learned. Below is the relationship between size and price of the house.</p>
+    </div>
+
+    <!-- User input banner -->
+    <div class="your-input-banner" id="input-banner">
+      <div class="yib-left">
+        Your input: <strong id="banner-size">1,500 sq ft</strong> house
+      </div>
+      <div class="yib-price" id="banner-price">$278.0K</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card" id="sc1">
+        <div class="stat-label">R² Score</div>
+        <div class="stat-val green"></div>
+      </div>
+      <div class="stat-card" id="sc2">
+        <div class="stat-label">Slope (m)</div>
+        <div class="stat-val"></div>
+      </div>
+      <div class="stat-card" id="sc3">
+        <div class="stat-label">Intercept (b)</div>
+        <div class="stat-val"></div>
+      </div>
+      <div class="stat-card" id="sc4">
+        <div class="stat-label">Data Points</div>
+        <div class="stat-val"></div>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="chart-card">
+      <div class="symbol-row">
+        <div class="point"><div class="point-dot" style="background:#e8edf5"></div> Actual houses</div>
+        <div class="point"><div class="point-line" style="background:#4f9ef8"></div> Regression line</div>
+        <div class="point"><div class="point-dot" style="background:#f85f4f;box-shadow:0 0 8px #f85f4f"></div> Your input</div>
+      </div>
+      <canvas id="chart" height="145"></canvas>
+    </div>
+
+    <!-- Data table -->
+    <div class="table-card">
+      <div class="table-header">
+        <h2>Training Data & Predictions</h2>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Size (sq ft)</th>
+            <th>Actual Price</th>
+            <th>Predicted Price</th>
+            <th>Error</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+  // Getting the user's input size 
+  const params = new URLSearchParams(window.location.search);
+  const userSize = parseInt(params.get('size')) || 1500;
+
+  async function loadChart() {
+    const response = await fetch('/get_data');
+    const serverData = await response.json();
+
+    const sizes = serverData.sizes;
+    const prices = serverData.prices;
+    const SLOPE = serverData.slope;
+    const INTERCEPT = serverData.intercept;
+    const r2Value = serverData.r2_score;
+
+    // Prediction function
+    const predict = (s) => +(SLOPE * s + INTERCEPT).toFixed(2);
+    const userPrice = predict(userSize);
+
+    // UI updates
+    document.getElementById('banner-size').textContent =
+      userSize.toLocaleString() + ' sq ft';
+
+    document.getElementById('banner-price').textContent =
+      `$${userPrice}K`;
+
+    document.querySelector('#sc1 .stat-val').textContent = r2Value;
+    document.querySelector('#sc2 .stat-val').textContent = SLOPE.toFixed(4) + 'K';
+    document.querySelector('#sc3 .stat-val').textContent = INTERCEPT.toFixed(2) + 'K';
+    document.querySelector('#sc4 .stat-val').textContent = sizes.length;
+
+    // Chart data
+    const scatterData = sizes.map((s, i) => ({ x: s, y: prices[i] }));
+    const lineData = [
+      { x: Math.min(...sizes), y: predict(Math.min(...sizes)) },
+      { x: Math.max(...sizes), y: predict(Math.max(...sizes)) }
+    ];
+
+    const ctx = document.getElementById('chart').getContext('2d');
+    new Chart(ctx, {
+      type: 'scatter',
+      data: {
+        datasets: [
+          {
+            label: 'Actual Houses',
+            data: scatterData,
+            backgroundColor: 'rgba(232,237,245,0.4)',
+            pointRadius: 4,
+          },
+          {
+            label: 'Regression Line',
+            data: lineData,
+            type: 'line',
+            borderColor: '#4f9ef8',
+            borderWidth: 3,
+            pointRadius: 0,
+            fill: false
+          },
+          {
+            label: 'Your Input',
+            data: [{ x: userSize, y: userPrice }],
+            backgroundColor: '#f85f4f',
+            pointRadius: 10,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { title: { display: true, text: 'Size (sq ft)', color: '#6b7fa3' } },
+          y: { title: { display: true, text: 'Price ($K)', color: '#6b7fa3' } }
+        }
+      }
+    });
+
+    const tbody = document.getElementById('tbody');
+    tbody.innerHTML = "";
+
+    sizes.slice(0, 15).forEach((s, i) => {
+      const pred = predict(s);
+      const error = pred - prices[i];
+      const absError = Math.abs(error);
+
+    let colorClass = '';
+
+    if (absError <= 10) {
+    colorClass = 'diff-good';   
+    } else if (absError <= 30) {
+    colorClass = 'diff-mid';    
+    } else {
+    colorClass = 'diff-bad';    
+    }
+
+    tbody.innerHTML += `
+      <tr>
+        <td>${s.toLocaleString()}</td>
+        <td>$${prices[i]}K</td>
+        <td>$${pred}K</td>
+        <td class="${colorClass}">${error.toFixed(1)}K</td>
+      </tr>
+      `;
+    });
+
+    const isInTraining = serverData.sizes.includes(userSize);
+
+    if (!isInTraining) {
+      tbody.innerHTML += `
+        <tr class="highlight">
+          <td>${userSize.toLocaleString()} ⬅ you</td>
+          <td>—</td>
+          <td>$${userPrice}K</td>
+          <td style="color:var(--muted)">predicted</td>
+        </tr>
+      `;
+    }
+  }
+
+  loadChart();
+</script>
+</body>
+</html>
