@@ -8,7 +8,7 @@ A sleek, easy-to-use web application that predicts house prices based on their s
 
 *   **Instant Predictions:** Move the slider or type in a house size to see an immediate price estimate.
 *   **Interactive Chart:** View a live scatter plot of the housing data and see exactly where your house falls on the model's trendline.
-*   **Live Metrics:** Displays the exact math formula used by the model, along with its slope, intercept, and $R^2$ accuracy score.
+*   **Live Metrics:** Displays the exact math formula used by the model, along with its slope, intercept and $R^2$ accuracy score.
 *   **Error Breakdown:** Shows a table comparing actual house prices vs. what the model predicted, color-coded by how close the guess was.
 
 ---
