@@ -59,7 +59,7 @@ Open your browser and copy paste the link to use the app.
 
 ## 📊 How it works
 
-### 1. The app generates a fake dataset of 120 houses with sizes between 500 and 2,500 sq ft.
-### 2. It calculates a realistic price using a base formula and adds some random noise to make it look like real-world data.
-### 3. The Linear Regression model trains on 80% of this data to find the line of best fit.
-### 4. When you give it a size, it plugs it into this classic formula to guess the price: Price = (Slope*Size) + Intercept
+1. The app generates a fake dataset of 120 houses with sizes between 500 and 2,500 sq ft.
+2. It calculates a realistic price using a base formula and adds some random noise to make it look like real-world data.
+3. The Linear Regression model trains on 80% of this data to find the line of best fit.
+4. When you give it a size, it plugs it into this classic formula to guess the price: Price = (Slope*Size) + Intercept
