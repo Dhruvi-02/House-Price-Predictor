@@ -16,7 +16,8 @@ A sleek, easy-to-use web application that predicts house prices based on their s
 ## 🚀 Tech Stack
 
 *   **Backend:** Python, Flask
-*   **Machine Learning:** Scikit-Learn (Linear Regression), NumPy, Pandas
+*   **Machine Learning:** Scikit-Learn (Linear Regression)
+*   **Data Preparation:** Numpy, Pandas
 *   **Frontend:** HTML5, CSS3 (Modern Dark Theme), JavaScript (ES6)
 *   **Charts:** Chart.js
 
